@@ -5,13 +5,19 @@
  */
 package frogsimulation;
 
+import javafx.scene.input.MouseEvent;
 import java.net.URL;
 import java.util.ResourceBundle;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.GridPane;
@@ -60,6 +66,9 @@ public class MainController implements Initializable {
     private TextField textBox_SurvieAdulte;
     
     @FXML
+    private Spinner<Integer> spinnerAgeMax;
+    
+    @FXML
     private TextField textBoxTauxReproduction;
     
     
@@ -78,6 +87,7 @@ public class MainController implements Initializable {
         marais.getLeslie().setSurvieOeuf(tauxSurvieOeuf);
         marais.getLeslie().setSurvieAdulte(tauxSurvieAdulte);
         marais.getLeslie().setReproduction(tauxReproduction);
+        marais.getLeslie().setAgeMax(spinnerAgeMax.getValue());
         
         int iteration;
         iteration = Integer.valueOf(textBoxSteps.getText());
@@ -145,6 +155,9 @@ public class MainController implements Initializable {
         textBoxTauxReproduction.setText(String.valueOf(tauxReproduction));
         textBox_SurvieAdulte.setText(String.valueOf(tauxSurvieAdulte));
         textBox_SurvieOeuf.setText(String.valueOf(tauxSurvieOeuf));
+        SpinnerValueFactory<Integer> valueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(1, marais.getLeslie().getAgeMax(), marais.getLeslie().getAgeMax());
+        spinnerAgeMax.setValueFactory(valueFactory);
+        
         
         UpdateIHMfields();
     }
@@ -157,12 +170,23 @@ public class MainController implements Initializable {
         
         for(int y = 0; y<sizeMarais; y++) {
             for (int x = 0; x<sizeMarais; x++) {
-                Rectangle r = new Rectangle(x*sizeCase, y*sizeCase, sizeCase, sizeCase);
                 densityAt = marais.getMatriceAt(x, y).getSomme();
-                r.setFill(GenerateColorFromDensity(densityAt));
-                r.setStroke(Color.GRAY);
-                r.setStrokeWidth(1);
-                containerGrid.getChildren().add(r);
+                RectangleHover rect = new RectangleHover(x, y, sizeCase, densityAt);
+                rect.setOnMouseClicked(new EventHandler<MouseEvent>()
+                {
+                    @Override
+                    public void handle(MouseEvent t) {
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                        alert.setTitle("Information Case");
+                        String message = "Nombre de grenouille: " + Float.toString(rect.GetSumGrenouille());
+                        alert.setContentText(message);
+                        alert.showAndWait();
+                    }
+                });
+                rect.setFill(GenerateColorFromDensity(densityAt));
+                rect.setStroke(Color.GRAY);
+                rect.setStrokeWidth(1);
+                containerGrid.getChildren().add(rect);
             }
         }    
     }
