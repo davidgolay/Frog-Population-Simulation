@@ -75,11 +75,12 @@ public class MainController implements Initializable {
     @FXML
     private GridPane containerEchelle;
 
-    
+    /**
+     * methode appelé lors que l'user clique sur le bouton "simuler"
+     * @param event 
+     */
     @FXML
     private void SimulateClicked(ActionEvent event) {
-        System.out.println("Simulation!");
-
         double tauxSurvieOeuf = Double.valueOf(textBox_SurvieOeuf.getText());
         double tauxSurvieAdulte = Double.valueOf(textBox_SurvieAdulte.getText());
         int tauxReproduction = Integer.valueOf(textBoxTauxReproduction.getText());
@@ -94,7 +95,10 @@ public class MainController implements Initializable {
         Simulate(iteration);
     }
     
-    
+    /**
+     * Methode appelée quand l'user clique sur le bouton "reset"
+     * @param event 
+     */
     @FXML
     void ResetClicked(ActionEvent event) {
         Reset();
@@ -103,36 +107,34 @@ public class MainController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         // TODO
-        marais = new Map();
-        sommeGlobale = 0;
-        anneesSimulees = 0;
-        annee = -25;
-        marais.getMatriceAt(2, 3).setVal(3, 50);
-        InitFields();
+        Reset();
         DrawScale();
-        Simulate(25);
     }
     
+    /**
+     * Cette méthode permet de dessiner l'echelle des densité de grenouille
+     */
     private void DrawScale(){
         float densityAt;
         float StepWanted = 10;
         float SizeCaseEchelle = 70;
       
         for(int x = 0; x<StepWanted; x++) {
-                VBox v = new VBox();
-                
-                //v.setVgrow(containerEchelle, Priority.ALWAYS);
-                densityAt = MapToRange(x, StepWanted, 50000);
-                Label labelValue = new Label(String.valueOf(densityAt));
-                Rectangle r = new Rectangle(0, 0, SizeCaseEchelle, SizeCaseEchelle/2);
-                r.setFill(GenerateColorFromDensity(densityAt));
-                r.setStroke(Color.ALICEBLUE);
-                r.setStrokeWidth(1);
-                v.getChildren().addAll(labelValue, r);
+            VBox v = new VBox();
 
-                containerEchelle.addColumn(x, v);        
+            //v.setVgrow(containerEchelle, Priority.ALWAYS);
+            densityAt = MapToRange(x, StepWanted, 50000);
+            Label labelValue = new Label(String.valueOf(densityAt));
+            Rectangle r = new Rectangle(0, 0, SizeCaseEchelle, SizeCaseEchelle/2);
+            r.setFill(GenerateColorFromDensity(densityAt));
+            r.setStroke(Color.ALICEBLUE);
+            r.setStrokeWidth(1);
+            v.getChildren().addAll(labelValue, r);
+
+            containerEchelle.addColumn(x, v);        
         }
     }
+    
     
     private void Reset(){
         
@@ -142,10 +144,14 @@ public class MainController implements Initializable {
         annee = -25;
         marais.getMatriceAt(2, 3).setVal(3, 50);
         InitFields();
+        UpdateIHMfields();
         containerGrid.getChildren().clear();
         Simulate(25);
     }
     
+    /**
+     * Cette méthode permet d'initiliser les pa
+     */
     private void InitFields(){
         
         double tauxSurvieOeuf = marais.getLeslie().getSurvieOeuf();
@@ -156,22 +162,27 @@ public class MainController implements Initializable {
         textBox_SurvieAdulte.setText(String.valueOf(tauxSurvieAdulte));
         textBox_SurvieOeuf.setText(String.valueOf(tauxSurvieOeuf));
         SpinnerValueFactory<Integer> valueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(1, marais.getLeslie().getAgeMax(), marais.getLeslie().getAgeMax());
-        spinnerAgeMax.setValueFactory(valueFactory);
-        
-        
-        UpdateIHMfields();
+        spinnerAgeMax.setValueFactory(valueFactory);     
     }
     
 
-    
+    /**
+     * Cette méthode permet de génnérer le contenu de la grille représentant le Marais
+     */
     private void UpdateGridDisplay(){
+        
+        //on vide la grille
+        containerGrid.getChildren().clear();
         
         float densityAt;
         
+        //on parcout toute les parcelles
         for(int y = 0; y<sizeMarais; y++) {
             for (int x = 0; x<sizeMarais; x++) {
+                //on récupert la somme des grenouille dans un parcelle donnée
                 densityAt = marais.getMatriceAt(x, y).getSomme();
                 RectangleHover rect = new RectangleHover(x, y, sizeCase, densityAt);
+                //si un rectangle (case representant une parcelle de la grille) est cliqué on donne la somme de grenouille dans cette case
                 rect.setOnMouseClicked(new EventHandler<MouseEvent>()
                 {
                     @Override
@@ -191,11 +202,19 @@ public class MainController implements Initializable {
         }    
     }
     
+    /**
+     * Cette méthode update les champs textuels IHM calculés
+     */
     private void UpdateIHMfields(){
         labelSomme.setText(Float.toString(sommeGlobale));
         labelAnneeSimulee.setText(Integer.toString(anneesSimulees));
     }
     
+    /**
+     * Cette méthode permet de générer une couleur à partir d'une densité (de grenouille par parcelle).
+     * @param density densité de grenouille à mapper en couleur
+     * @return couleur à afficher pour la desnité donnée
+     */
     private Color GenerateColorFromDensity(float density){ 
         
         Color mappedColor;
@@ -221,29 +240,49 @@ public class MainController implements Initializable {
         } 
         else 
         {
-            System.out.println("PLUS DE 50 000 Grenouilles: " + normalizedDensity);
-            float overDensity = normalizedDensity - 1;
-            mappedColor = new Color(1, 0, 0, 1);
-            //mappedColor = Color.BLUE; // la case devient bleu
+            //Parfois, la densité d'une parcelle donnée dépasse à peine 50 000 grenouilles
+            // Plus précisement, la densité dépasse 50000 de quelques milièmes de grenouille seulement : 0.004 grenouille en plus)
+            mappedColor = new Color(1, 0, 0, 1); //dans ce cas là on map la couleur en rouge
         }
         
         return mappedColor;
     }
     
+    /**
+     * Cette méthode permet de mapper une valeur dont le minimum sera toujours 0.
+     * Cette méthode permet en autre de mapper une valeur sur une echelle initiale de 0 à 50000 (total de grenouilles d'une parcelle) sur une nouvelle échelle de 0 à 1 (pour la colorisation)
+     * @param valueToMap valeur que l'on souhaite mapper/transformer dans une autre échelle
+     * @param maxValueIn valeur maximum de l'échelle de la valeur que l'on souhaite mapper
+     * @param maxValueOut valeur maximum de l'échelle souhaitée
+     * @return la valeur mappée sur l'échelle souhaitée.
+     */
     private float MapToRange(float valueToMap, float maxValueIn, float maxValueOut){       
         float ratio = maxValueIn / maxValueOut;    
         float mappedValue = valueToMap / ratio;
         return mappedValue;
     }
     
+    /**
+     * Cette méthode permet de simulée l'évolution de la population de grenouilles sur tout les parcelles
+     * L'entier itération passé en paramètre correspond au nombre d'année que lon souhaite simuler
+     * @param iteration nombre d'année à simuler
+     */
     public void Simulate(int iteration){
         for(int a = 0; a<iteration; a++){
+            
+            //évolution d'une année du Marais
             marais.evolve();
+            
+            //update des attributs
             sommeGlobale = marais.getSomme();
             annee++;
             anneesSimulees++;
+            
+            //Mis à jour de l'IHM
             UpdateGridDisplay();
             UpdateIHMfields();
+            
+            //affichage console du nouveau nombre total de groenouille dans le marais
             System.out.println(sommeGlobale);
         } 
     }
